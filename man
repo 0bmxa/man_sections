@@ -1,23 +1,28 @@
 #!/bin/zsh
 
-CMD_NAME=$1
+# Enable pipefail, but no -e, cause otherwise the test below fails
+set -o pipefail
+
+FIRST_ARG=$1
 ORIGINAL_MAN='/usr/bin/man'
 
 # If first arg is a section number alread, open `man` right away
-if [[ $CMD_NAME -gt 0 && $CMD_NAME -lt 10 ]]; then
+if [[ $FIRST_ARG =~ ^[0-9]$ ]]; then
     $ORIGINAL_MAN $@
     exit 0
 fi
 
 
 # Search
+CMD_NAME=$FIRST_ARG
 FOUND_SECTIONS=()
 for i in {1..9}; do
-    MAN_RETURN=$($ORIGINAL_MAN $i $CMD_NAME 2>&1)
-    if [[ "$MAN_RETURN" != 'No entry '* ]]; then
+    MAN_TEST_RETURN=$($ORIGINAL_MAN $i $CMD_NAME 2>&1)
+    if [[ "$MAN_TEST_RETURN" != 'No entry '* ]]; then
         FOUND_SECTIONS+=("$i")
     fi
 done
+
 
 # Output
 FOUND_SECTIONS_LENGTH=${#FOUND_SECTIONS[@]}
@@ -37,4 +42,7 @@ if [[ $FOUND_SECTIONS_LENGTH -gt 0 ]]; then
     printf 'Manual entry for %s found in section %d only.\n' $CMD_NAME $FOUND_SECTIONS[1]
 fi
 
+
+# Run real man, if we got this far
+# (only in case of zero or one matches)
 $ORIGINAL_MAN "$@"
