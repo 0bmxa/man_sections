@@ -1,0 +1,40 @@
+#!/bin/zsh
+
+CMD_NAME=$1
+ORIGINAL_MAN='/usr/bin/man'
+
+# If first arg is a section number alread, open `man` right away
+if [[ $CMD_NAME -gt 0 && $CMD_NAME -lt 10 ]]; then
+    $ORIGINAL_MAN $@
+    exit 0
+fi
+
+
+# Search
+FOUND_SECTIONS=()
+for i in {1..9}; do
+    MAN_RETURN=$($ORIGINAL_MAN $i $CMD_NAME 2>&1)
+    if [[ "$MAN_RETURN" != 'No entry '* ]]; then
+        FOUND_SECTIONS+=("$i")
+    fi
+done
+
+# Output
+FOUND_SECTIONS_LENGTH=${#FOUND_SECTIONS[@]}
+
+if [[ $FOUND_SECTIONS_LENGTH -gt 1 ]]; then
+    LOOP_LENGTH=$(($FOUND_SECTIONS_LENGTH-1))
+    printf 'Manual entry for %s found in sections ' $CMD_NAME
+    for i in {1..$LOOP_LENGTH}; do
+        printf '%d, ' $FOUND_SECTIONS[$i]
+    done
+    printf 'and %d.\n' $FOUND_SECTIONS[$FOUND_SECTIONS_LENGTH]
+
+    exit 0
+fi
+
+if [[ $FOUND_SECTIONS_LENGTH -gt 0 ]]; then
+    printf 'Manual entry for %s found in section %d only.\n' $CMD_NAME $FOUND_SECTIONS[1]
+fi
+
+$ORIGINAL_MAN "$@"
